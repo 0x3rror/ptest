@@ -37,6 +37,9 @@
         const PlayIcon = () => (
             <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         );
+        const RefreshIcon = () => (
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        );
 
         function App() {
             const [view, setView] = useState('home');
@@ -46,6 +49,7 @@
             const [currentEp, setCurrentEp] = useState(1);
             const [searchQuery, setSearchQuery] = useState('');
             const [loading, setLoading] = useState(true);
+            const [activeServer, setActiveServer] = useState('vidsrc');
 
             useEffect(() => {
                 fetchContent('https://api.jikan.moe/v4/seasons/now?limit=24');
@@ -131,14 +135,21 @@
             );
 
             const Watch = () => {
-                // Using a multi-source anime embedder (Consumet/Vidsrc style)
-                // Note: These players pull content based on MyAnimeList IDs
-                const streamUrl = `https://vidsrc.me/embed/anime/${selected.mal_id}/${currentEp}`;
+                // List of multiple potential streaming providers
+                const servers = {
+                    vidsrc: `https://vidsrc.me/embed/anime/${selected.mal_id}/${currentEp}`,
+                    vidsrc_xyz: `https://vidsrc.xyz/embed/anime/${selected.mal_id}/${currentEp}`,
+                    animeapi: `https://animeapi.com/embed/${selected.mal_id}/${currentEp}`
+                };
+
+                const streamUrl = servers[activeServer];
                 
                 return (
                     <div className="p-4 md:p-10 max-w-6xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
+                        {/* Player Section */}
                         <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/5 relative">
                             <iframe 
+                                key={`${activeServer}-${currentEp}`}
                                 src={streamUrl} 
                                 className="w-full h-full" 
                                 allowFullScreen 
@@ -146,7 +157,24 @@
                                 frameBorder="0"
                             />
                         </div>
+
+                        {/* Server Switcher */}
+                        <div className="mt-4 flex flex-wrap gap-2 items-center">
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mr-2 flex items-center gap-1">
+                                <RefreshIcon /> Switch Server:
+                            </span>
+                            {Object.keys(servers).map(srv => (
+                                <button 
+                                    key={srv}
+                                    onClick={() => setActiveServer(srv)}
+                                    className={`px-4 py-1.5 text-[10px] font-black rounded uppercase transition ${activeServer === srv ? 'bg-[#9c88ff] text-white' : 'bg-[#24252c] text-gray-400 hover:text-white'}`}
+                                >
+                                    {srv.replace('_', ' ')}
+                                </button>
+                            ))}
+                        </div>
                         
+                        {/* Episodes Grid */}
                         <div className="mt-6 bg-[#14151a] p-4 rounded-xl border border-white/5">
                             <h3 className="text-sm font-black mb-4 uppercase text-[#9c88ff]">Episodes</h3>
                             <div className="ep-grid custom-scrollbar max-h-40 overflow-y-auto pr-2">
@@ -162,6 +190,7 @@
                             </div>
                         </div>
 
+                        {/* Info Section */}
                         <div className="mt-8 flex flex-col md:flex-row gap-10 bg-[#14151a] p-8 rounded-xl border border-white/5 shadow-xl">
                             <img src={selected.images.jpg.large_image_url} className="w-48 h-max rounded-lg shadow-2xl border border-white/10" />
                             <div>
