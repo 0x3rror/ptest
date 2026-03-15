@@ -21,6 +21,7 @@
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .card-hover:hover img { transform: scale(1.1); }
         .card-hover:hover { color: #9c88ff; }
+        .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); gap: 8px; }
     </style>
 </head>
 <body>
@@ -42,6 +43,7 @@
             const [animeList, setAnimeList] = useState([]);
             const [spotlight, setSpotlight] = useState(null);
             const [selected, setSelected] = useState(null);
+            const [currentEp, setCurrentEp] = useState(1);
             const [searchQuery, setSearchQuery] = useState('');
             const [loading, setLoading] = useState(true);
 
@@ -69,6 +71,7 @@
 
             const openWatch = (anime) => {
                 setSelected(anime);
+                setCurrentEp(1);
                 setView('watch');
                 window.scrollTo(0, 0);
             };
@@ -127,31 +130,56 @@
                 </div>
             );
 
-            const Watch = () => (
-                <div className="p-4 md:p-10 max-w-6xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
-                    <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/5">
-                        <iframe 
-                            src={`https://www.youtube.com/embed/${selected.trailer?.youtube_id || 'dQw4w9WgXcQ'}?autoplay=1`} 
-                            className="w-full h-full" 
-                            allowFullScreen 
-                        />
-                    </div>
-                    <div className="mt-8 flex flex-col md:flex-row gap-10 bg-[#14151a] p-8 rounded-xl border border-white/5 shadow-xl">
-                        <img src={selected.images.jpg.large_image_url} className="w-48 h-max rounded-lg shadow-2xl border border-white/10" />
-                        <div>
-                            <h2 className="text-4xl font-black mb-4 text-white leading-tight uppercase tracking-tighter">{selected.title}</h2>
-                            <div className="flex gap-4 mb-6 text-xs font-bold">
-                                <span className="text-[#9c88ff] bg-[#9c88ff]/10 px-3 py-1 rounded-full">★ {selected.score}</span>
-                                <span className="text-gray-500 bg-white/5 px-3 py-1 rounded-full uppercase">{selected.status}</span>
+            const Watch = () => {
+                // Using a multi-source anime embedder (Consumet/Vidsrc style)
+                // Note: These players pull content based on MyAnimeList IDs
+                const streamUrl = `https://vidsrc.me/embed/anime/${selected.mal_id}/${currentEp}`;
+                
+                return (
+                    <div className="p-4 md:p-10 max-w-6xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
+                        <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/5 relative">
+                            <iframe 
+                                src={streamUrl} 
+                                className="w-full h-full" 
+                                allowFullScreen 
+                                scrolling="no"
+                                frameBorder="0"
+                            />
+                        </div>
+                        
+                        <div className="mt-6 bg-[#14151a] p-4 rounded-xl border border-white/5">
+                            <h3 className="text-sm font-black mb-4 uppercase text-[#9c88ff]">Episodes</h3>
+                            <div className="ep-grid custom-scrollbar max-h-40 overflow-y-auto pr-2">
+                                {Array.from({ length: selected.episodes || 12 }, (_, i) => (
+                                    <button 
+                                        key={i + 1}
+                                        onClick={() => { setCurrentEp(i + 1); window.scrollTo(0,0); }}
+                                        className={`py-2 text-xs font-bold rounded transition ${currentEp === i + 1 ? 'bg-[#9c88ff] text-white' : 'bg-[#24252c] text-gray-400 hover:bg-[#32343d]'}`}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
                             </div>
-                            <p className="text-gray-400 leading-relaxed text-sm md:text-base italic">{selected.synopsis}</p>
-                            <button onClick={() => setView('home')} className="mt-8 text-[#9c88ff] font-black uppercase text-xs tracking-widest hover:text-white transition-colors flex items-center gap-2">
-                                <span>←</span> Back to library
-                            </button>
+                        </div>
+
+                        <div className="mt-8 flex flex-col md:flex-row gap-10 bg-[#14151a] p-8 rounded-xl border border-white/5 shadow-xl">
+                            <img src={selected.images.jpg.large_image_url} className="w-48 h-max rounded-lg shadow-2xl border border-white/10" />
+                            <div>
+                                <h2 className="text-4xl font-black mb-4 text-white leading-tight uppercase tracking-tighter">{selected.title}</h2>
+                                <div className="flex gap-4 mb-6 text-xs font-bold">
+                                    <span className="text-[#9c88ff] bg-[#9c88ff]/10 px-3 py-1 rounded-full">★ {selected.score}</span>
+                                    <span className="text-gray-500 bg-white/5 px-3 py-1 rounded-full uppercase">{selected.status}</span>
+                                    <span className="text-gray-300 bg-[#9c88ff] px-3 py-1 rounded-full uppercase">Episode {currentEp}</span>
+                                </div>
+                                <p className="text-gray-400 leading-relaxed text-sm md:text-base italic">{selected.synopsis}</p>
+                                <button onClick={() => setView('home')} className="mt-8 text-[#9c88ff] font-black uppercase text-xs tracking-widest hover:text-white transition-colors flex items-center gap-2">
+                                    <span>←</span> Back to library
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            );
+                );
+            };
 
             return (
                 <div className="min-h-screen custom-scrollbar">
